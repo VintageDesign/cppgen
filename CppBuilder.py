@@ -25,23 +25,23 @@ class CppBuilder:
 
     @contextlib.contextmanager
     def indent(self) -> ContextManager:
-        self.push_indent()
+        self._push_indent()
         try:
             yield
         finally:
-            self.pop_indent()
+            self._pop_indent()
 
-    def push_indent(self) -> None:
+    def _push_indent(self) -> None:
         self._indentation_level += 1
 
-    def pop_indent(self) -> None:
+    def _pop_indent(self) -> None:
         self._indentation_level = max(self._indentation_level - 1, 0)
 
     @property
     def indentation(self):
         return self._indent_spaces * self._indentation_level
 
-    def write(self, code: str) -> None:
+    def _write(self, code: str) -> None:
         if not code:
             return
 
@@ -59,7 +59,9 @@ class CppBuilder:
             self._indent_next = True
 
     def write_line(self, code: str = ""):
-        self.write("{}\n".format(code))
+        if code is None:
+            code = ""
+        self._write("{}\n".format(code))
 
     @contextlib.contextmanager
     def block(self,
@@ -67,13 +69,13 @@ class CppBuilder:
               *,
               inline: bool = False,
               newline: bool = True) -> None:
-        self.write('{} {}'.format(line, '{'))
+        self._write('{} {}'.format(line, '{'))
 
         if not inline:
-            self.write('\n')
-            self.push_indent()
+            self._write('\n')
+            self._push_indent()
         else:
-            self.write(' ')
+            self._write(' ')
 
         self._buffer.append(StringIO())
 
@@ -84,7 +86,7 @@ class CppBuilder:
             if inline:
                 text = ' '.join(text.split())
             else:
-                self.pop_indent()
+                self._pop_indent()
 
             self._buffer[-1].write(text)
 
@@ -98,7 +100,7 @@ class CppBuilder:
                 if newline:
                     self.write_line("}")
                 else:
-                    self.write("} ")
+                    self._write("} ")
                     self._indent_next = False
 
     def _split_write_statement(self, statement: str) -> None:
@@ -123,11 +125,11 @@ class CppBuilder:
         self.write_line('// {}'.format(comment))
 
     @contextlib.contextmanager
-    def label(self, label: str, end: str = '') -> ContextManager:
+    def _label(self, label: str, end: str = '') -> ContextManager:
         self.write_line("{}:".format(label))
         self._buffer.append(StringIO())
 
-        self.push_indent()
+        self._push_indent()
 
         try:
             yield
@@ -137,7 +139,7 @@ class CppBuilder:
 
             text = self._buffer.pop().getvalue()
 
-            self.pop_indent()
+            self._pop_indent()
 
             self._buffer[-1].write(text)
 
@@ -145,6 +147,11 @@ class CppBuilder:
     def case(self, *args, end: str = '') -> None:
         for label in args[:-1]:
             self.write_line("case {}:".format(label))
-        with self.label("case {}".format(args[-1]), end=end):
+        with self._label("case {}".format(args[-1]), end=end):
             yield
 
+    @contextlib.contextmanager
+    def default(self) -> None:
+        self.write_line("default:")
+        with self._label("default:"):
+            yield
