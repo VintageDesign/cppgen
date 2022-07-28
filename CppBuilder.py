@@ -11,7 +11,7 @@ class CppBuilder:
     def __init__(self, indent_len=4):
         self._buffer = [StringIO()]
         self._indentation_level = 0
-        self._indent_spaces = ' ' * indent_len
+        self._indent_spaces = " " * indent_len
         self._indent_next = False
 
     def get_value(self) -> str:
@@ -20,8 +20,11 @@ class CppBuilder:
 
     def save(self, file_out: str) -> None:
         assert len(self._buffer) == 1
-        with open(file_out, 'w') as f:
+        with open(file_out, "w") as f:
             f.write(self._buffer[-1].getvalue())
+
+    def include(self, library: str):
+        self._buffer[-1].write("#include <" + library + ">\n")
 
     @contextlib.contextmanager
     def indent(self) -> ContextManager:
@@ -49,11 +52,11 @@ class CppBuilder:
             self._buffer[-1].write(self.indentation)
         self._buffer[-1].write(code)
 
-        nl_pos = code.rfind('\n')
-        if nl_pos != -1 and code[nl_pos:].strip() == '':
+        nl_pos = code.rfind("\n")
+        if nl_pos != -1 and code[nl_pos:].strip() == "":
             self._indent_next = True
         elif self._indent_next is True:
-            if code.strip() != '':
+            if code.strip() != "":
                 self._indent_next = False
         else:
             self._indent_next = True
@@ -64,18 +67,14 @@ class CppBuilder:
         self._write("{}\n".format(code))
 
     @contextlib.contextmanager
-    def block(self,
-              line: str,
-              *,
-              inline: bool = False,
-              newline: bool = True) -> None:
-        self._write('{} {}'.format(line, '{'))
+    def block(self, line: str, *, inline: bool = False, newline: bool = True) -> None:
+        self._write("{} {}".format(line, "{"))
 
         if not inline:
-            self._write('\n')
+            self._write("\n")
             self._push_indent()
         else:
-            self._write(' ')
+            self._write(" ")
 
         self._buffer.append(StringIO())
 
@@ -84,7 +83,7 @@ class CppBuilder:
         finally:
             text = self._buffer.pop().getvalue()
             if inline:
-                text = ' '.join(text.split())
+                text = " ".join(text.split())
             else:
                 self._pop_indent()
 
@@ -115,17 +114,17 @@ class CppBuilder:
                     self.write_line(line)
                 self.write_line("{};".format(lines[-1]))
 
-    def write_code(self, statement: str = '') -> None:
-        for stmt in statement.split(';'):
+    def write_code(self, statement: str = "") -> None:
+        for stmt in statement.split(";"):
             stmt = stmt.strip()
             if stmt:
                 self._split_write_statement(stmt)
 
     def comment(self, comment: str) -> None:
-        self.write_line('// {}'.format(comment))
+        self.write_line("// {}".format(comment))
 
     @contextlib.contextmanager
-    def _label(self, label: str, end: str = '') -> ContextManager:
+    def _label(self, label: str, end: str = "") -> ContextManager:
         self.write_line("{}:".format(label))
         self._buffer.append(StringIO())
 
@@ -144,7 +143,7 @@ class CppBuilder:
             self._buffer[-1].write(text)
 
     @contextlib.contextmanager
-    def case(self, *args, end: str = '') -> None:
+    def case(self, *args, end: str = "") -> None:
         for label in args[:-1]:
             self.write_line("case {}:".format(label))
         with self._label("case {}".format(args[-1]), end=end):

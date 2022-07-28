@@ -8,6 +8,11 @@ def test_builder():
     return CppBuilder()
 
 
+def test_include(test_builder):
+    test_builder.include("stdio.h")
+    assert test_builder.get_value() == "#include <stdio.h>"
+
+
 def test_indent():
     indentation_spaces = 5
     test_builder = CppBuilder(indentation_spaces)
